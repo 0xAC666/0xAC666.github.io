@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>index</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        canvas { display: block; background-color: #eeeeee; /* 移除了cursor: none; */ }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const CONFIG = {
+            PARTICLE_COUNT: 100,
+            PARTICLE_SIZE: 0.1,
+            PARTICLE_COLOR: '#ccccff',
+            CONNECTION_COLOR: '#8dbef7',
+            MOUSE_RANGE: 150,
+            PARTICLE_RANGE: 80,
+            BARRIER_RATIO: 0.6,
+            BARRIER_SPEED_FACTOR: 0.7,
+            BASE_PULL_SPEED: 2.0,
+            SPEED_FACTOR: 0.5,
+            TRAIL_OPACITY: 0,
+            BACKGROUND: '#eeeeee',
+            MAX_SPEED: 0.9524,
+            MIN_OPACITY: 0.05,
+            PARTICLE_LINK_OPACITY: 9.0,
+            MAX_PULL_DISTANCE: 5.0,
+            MOUSE_LINK_BASE_OPACITY: 0.3
+        };
+        
+        let mouse = { x: -1000, y: -1000, prevX: -1000, prevY: -1000, speed: 0 };
+        let particles = [];
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = CONFIG.PARTICLE_SIZE;
+                this.color = CONFIG.PARTICLE_COLOR;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 0.1 + Math.random() * CONFIG.MAX_SPEED;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.originalVx = this.vx;
+                this.originalVy = this.vy;
+                this.linked = false;
+                this.linkOpacity = 0;
+                this.stableFrames = 0;
+            }
+            
+            update() {
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                const prevX = this.x;
+                const prevY = this.y;
+                
+                if (distance <= CONFIG.MOUSE_RANGE) {
+                    if (!this.linked) {
+                        this.linked = true;
+                    }
+                    
+                    this.linkOpacity = Math.pow(1 - (distance / CONFIG.MOUSE_RANGE), 1.8);
+                    
+                    const baseBarrierRadius = CONFIG.MOUSE_RANGE * CONFIG.BARRIER_RATIO;
+                    const dynamicBarrierRadius = baseBarrierRadius * (1 + mouse.speed * CONFIG.BARRIER_SPEED_FACTOR);
+                    
+                    if (distance > dynamicBarrierRadius) {
+                        const pullDistance = Math.min(
+                            distance - dynamicBarrierRadius,
+                            CONFIG.MAX_PULL_DISTANCE
+                        );
+                        
+                        const pullRatio = pullDistance / distance;
+                        
+                        this.x -= dx * pullRatio * 0.8;
+                        this.y -= dy * pullRatio * 0.8;
+                        
+                        this.stableFrames = 0;
+                    } else {
+                        this.stableFrames++;
+                    }
+                    
+                    if (distance > CONFIG.MOUSE_RANGE) {
+                        this.linked = false;
+                        this.linkOpacity = 0;
+                    }
+                } else {
+                    this.linked = false;
+                    this.linkOpacity = 0;
+                    this.stableFrames++;
+                }
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x < 0) { this.x = 0; this.vx = -this.vx; this.originalVx = -this.originalVx; }
+                else if (this.x > canvas.width) { this.x = canvas.width; this.vx = -this.vx; this.originalVx = -this.originalVx; }
+                if (this.y < 0) { this.y = 0; this.vy = -this.vy; this.originalVy = -this.originalVy; }
+                else if (this.y > canvas.height) { this.y = canvas.height; this.vy = -this.vy; this.originalVy = -this.originalVy; }
+                
+                const moveDistance = Math.sqrt(
+                    Math.pow(this.x - prevX, 2) + Math.pow(this.y - prevY, 2)
+                );
+                
+                if (moveDistance > CONFIG.MAX_PULL_DISTANCE * 1.5) {
+                    this.x = prevX + (this.x - prevX) * 0.5;
+                    this.y = prevY + (this.y - prevY) * 0.5;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 6, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+            
+            drawLink() {
+                if (!this.linked || this.linkOpacity <= 0) return;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(mouse.x, mouse.y);
+                ctx.lineWidth = 0.1 + this.linkOpacity * 0.2;
+                const opacity = Math.min(this.linkOpacity * 6.0, 1.0);
+                const finalOpacity = CONFIG.MOUSE_LINK_BASE_OPACITY + 
+                                   (opacity * (0.82 - CONFIG.MOUSE_LINK_BASE_OPACITY));
+                ctx.strokeStyle = `rgba(141, 190, 247, ${finalOpacity})`;
+                ctx.stroke();
+            }
+            
+            drawLinkTo(other) {
+                const dx = this.x - other.x;
+                const dy = this.y - other.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                const range = CONFIG.PARTICLE_RANGE;
+                
+                if (distance <= range) {
+                    const opacity = Math.pow(1 - (distance / range), 1.8);
+                    
+                    if (opacity < CONFIG.MIN_OPACITY) return;
+                    
+                    const linkOpacity = Math.min(opacity * CONFIG.PARTICLE_LINK_OPACITY, 1.0);
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(other.x, other.y);
+                    ctx.lineWidth = 0.2 + opacity * 0.4;
+                    ctx.strokeStyle = `rgba(141, 190, 247, ${0.78 + linkOpacity * 0.17})`;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < CONFIG.PARTICLE_COUNT; i++) {
+                particles.push(new Particle());
+            }
+        }
+        
+        function clearCanvas() {
+            ctx.fillStyle = CONFIG.BACKGROUND;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        function updateMouseSpeed() {
+            const dx = mouse.x - mouse.prevX;
+            const dy = mouse.y - mouse.prevY;
+            mouse.speed = Math.sqrt(dx * dx + dy * dy) * 0.03;
+            mouse.prevX = mouse.x;
+            mouse.prevY = mouse.y;
+        }
+        
+        function animate() {
+            clearCanvas();
+            updateMouseSpeed();
+            
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    particles[i].drawLinkTo(particles[j]);
+                }
+            }
+            
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+                particle.drawLink();
+            });
+            
+            // 移除了绘制蓝色鼠标点的代码
+            // ctx.beginPath();
+            // ctx.arc(mouse.x, mouse.y, 2, 0, Math.PI * 2);
+            // ctx.fillStyle = '#8dbef7';
+            // ctx.fill();
+            
+            requestAnimationFrame(animate);
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = -1000;
+            mouse.y = -1000;
+            mouse.speed = 0;
+        });
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        
+        initParticles();
+        mouse.prevX = mouse.x;
+        mouse.prevY = mouse.y;
+        animate();
+    </script>
+</body>
+</html>
