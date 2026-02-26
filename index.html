@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>index</title>
+    <title>0xAC666主页</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
-        canvas { display: block; background-color: #eeeeee; /* 移除了cursor: none; */ }
+        canvas { display: block; background-color: #eeeeee; }
     </style>
 </head>
 <body>
@@ -32,7 +32,6 @@
             TRAIL_OPACITY: 0,
             BACKGROUND: '#eeeeee',
             MAX_SPEED: 0.9524,
-            MIN_OPACITY: 0.05,
             PARTICLE_LINK_OPACITY: 9.0,
             MAX_PULL_DISTANCE: 5.0,
             MOUSE_LINK_BASE_OPACITY: 0.3
@@ -151,7 +150,8 @@
                 if (distance <= range) {
                     const opacity = Math.pow(1 - (distance / range), 1.8);
                     
-                    if (opacity < CONFIG.MIN_OPACITY) return;
+                    // 移除了低不透明度线的隐藏机制
+                    // 现在所有在范围内的粒子都会绘制连线，无论不透明度多低
                     
                     const linkOpacity = Math.min(opacity * CONFIG.PARTICLE_LINK_OPACITY, 1.0);
                     ctx.beginPath();
@@ -199,12 +199,6 @@
                 particle.draw();
                 particle.drawLink();
             });
-            
-            // 移除了绘制蓝色鼠标点的代码
-            // ctx.beginPath();
-            // ctx.arc(mouse.x, mouse.y, 2, 0, Math.PI * 2);
-            // ctx.fillStyle = '#8dbef7';
-            // ctx.fill();
             
             requestAnimationFrame(animate);
         }
