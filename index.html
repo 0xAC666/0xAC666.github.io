@@ -11,7 +11,6 @@
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -56,7 +55,6 @@
                 this.linkOpacity = 0;
                 this.stableFrames = 0;
             }
-            
             update() {
                 const dx = this.x - mouse.x;
                 const dy = this.y - mouse.y;
@@ -69,18 +67,15 @@
                     if (!this.linked) {
                         this.linked = true;
                     }
-                    
                     this.linkOpacity = Math.pow(1 - (distance / CONFIG.MOUSE_RANGE), 1.8);
                     
                     const baseBarrierRadius = CONFIG.MOUSE_RANGE * CONFIG.BARRIER_RATIO;
                     const dynamicBarrierRadius = baseBarrierRadius * (1 + mouse.speed * CONFIG.BARRIER_SPEED_FACTOR);
-                    
                     if (distance > dynamicBarrierRadius) {
                         const pullDistance = Math.min(
                             distance - dynamicBarrierRadius,
                             CONFIG.MAX_PULL_DISTANCE
                         );
-                        
                         const pullRatio = pullDistance / distance;
                         
                         this.x -= dx * pullRatio * 0.8;
@@ -90,7 +85,6 @@
                     } else {
                         this.stableFrames++;
                     }
-                    
                     if (distance > CONFIG.MOUSE_RANGE) {
                         this.linked = false;
                         this.linkOpacity = 0;
@@ -100,7 +94,6 @@
                     this.linkOpacity = 0;
                     this.stableFrames++;
                 }
-                
                 this.x += this.vx;
                 this.y += this.vy;
                 
@@ -108,27 +101,22 @@
                 else if (this.x > canvas.width) { this.x = canvas.width; this.vx = -this.vx; this.originalVx = -this.originalVx; }
                 if (this.y < 0) { this.y = 0; this.vy = -this.vy; this.originalVy = -this.originalVy; }
                 else if (this.y > canvas.height) { this.y = canvas.height; this.vy = -this.vy; this.originalVy = -this.originalVy; }
-                
                 const moveDistance = Math.sqrt(
                     Math.pow(this.x - prevX, 2) + Math.pow(this.y - prevY, 2)
                 );
-                
                 if (moveDistance > CONFIG.MAX_PULL_DISTANCE * 1.5) {
                     this.x = prevX + (this.x - prevX) * 0.5;
                     this.y = prevY + (this.y - prevY) * 0.5;
                 }
             }
-            
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size * 6, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
                 ctx.fill();
             }
-            
             drawLink() {
                 if (!this.linked || this.linkOpacity <= 0) return;
-                
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
                 ctx.lineTo(mouse.x, mouse.y);
@@ -139,7 +127,6 @@
                 ctx.strokeStyle = `rgba(141, 190, 247, ${finalOpacity})`;
                 ctx.stroke();
             }
-            
             drawLinkTo(other) {
                 const dx = this.x - other.x;
                 const dy = this.y - other.y;
@@ -149,10 +136,6 @@
                 
                 if (distance <= range) {
                     const opacity = Math.pow(1 - (distance / range), 1.8);
-                    
-                    // 移除了低不透明度线的隐藏机制
-                    // 现在所有在范围内的粒子都会绘制连线，无论不透明度多低
-                    
                     const linkOpacity = Math.min(opacity * CONFIG.PARTICLE_LINK_OPACITY, 1.0);
                     ctx.beginPath();
                     ctx.moveTo(this.x, this.y);
@@ -163,19 +146,16 @@
                 }
             }
         }
-
         function initParticles() {
             particles = [];
             for (let i = 0; i < CONFIG.PARTICLE_COUNT; i++) {
                 particles.push(new Particle());
             }
         }
-        
         function clearCanvas() {
             ctx.fillStyle = CONFIG.BACKGROUND;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        
         function updateMouseSpeed() {
             const dx = mouse.x - mouse.prevX;
             const dy = mouse.y - mouse.prevY;
@@ -183,7 +163,6 @@
             mouse.prevX = mouse.x;
             mouse.prevY = mouse.y;
         }
-        
         function animate() {
             clearCanvas();
             updateMouseSpeed();
@@ -193,33 +172,27 @@
                     particles[i].drawLinkTo(particles[j]);
                 }
             }
-            
             particles.forEach(particle => {
                 particle.update();
                 particle.draw();
                 particle.drawLink();
             });
-            
             requestAnimationFrame(animate);
         }
-
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mouse.x = e.clientX - rect.left;
             mouse.y = e.clientY - rect.top;
         });
-        
         canvas.addEventListener('mouseleave', () => {
             mouse.x = -1000;
             mouse.y = -1000;
             mouse.speed = 0;
         });
-        
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
-        
         initParticles();
         mouse.prevX = mouse.x;
         mouse.prevY = mouse.y;
