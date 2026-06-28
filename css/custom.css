@@ -1,0 +1,7 @@
+.fa-luogu::before {
+  content: '';
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background: url('/img/luogu.ico') no-repeat center / contain;
+}
