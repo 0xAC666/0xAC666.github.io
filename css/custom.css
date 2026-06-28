@@ -1,7 +1,24 @@
+/* 洛谷图标 */
 .fa-luogu::before {
   content: '';
   display: inline-block;
   width: 1em;
   height: 1em;
   background: url('/img/luogu.ico') no-repeat center / contain;
+}
+
+/*导航栏背景渐变*/
+#nav {
+  background: linear-gradient(45deg, rgba(178, 211, 250, 0.7), rgba(224, 250, 183, 0.7));
+  background-size: 400% 400%;
+  animation: gradientFlow 8s ease infinite;
+}
+
+/* 深色背景 */
+#rain-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #04002d 0%, #272b1e 100%);
 }
