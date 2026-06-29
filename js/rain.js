@@ -24,9 +24,16 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-function draw() {
-  ctx.fillStyle = 'rgba(4, 0, 45, 0.05)';
+function drawBackground() {
+  const gradient = ctx.createLinearGradient(0, 0, width, 0);
+  gradient.addColorStop(0, 'rgba(4, 0, 45, 0.05)');
+  gradient.addColorStop(1, 'rgba(39, 45, 30, 0.05)');
+  ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
+}
+
+function draw() {
+  drawBackground();
   
   ctx.lineWidth = 1;
   ctx.lineCap = 'round';
